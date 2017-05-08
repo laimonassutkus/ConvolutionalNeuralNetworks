@@ -89,16 +89,17 @@ def predict():
         return
 
     def do_prediction(mnist_image):
-        mnist_image_vector = mnist_image.reshape(1, 784)  # TODO 784 is hardcoded
+        mnist_image_vector = []
+        if current_mode is Mode.NN:
+            mnist_image_vector = mnist_image.reshape(1, 784)  # TODO 1,784 is hardcoded
+        if current_mode is Mode.CNN:
+            mnist_image_vector = mnist_image.reshape(1, 1, 28, 28)  # TODO 1,1,28,28 is hardcoded
         with tensorflow_graph.as_default():
+            prediction = 0
             if current_mode is Mode.NN and neural_model is not None:
                 prediction = neural_model.predict(mnist_image_vector)
-            else:
-                return
             if current_mode is Mode.CNN and convolutional_model is not None:
-                prediction = convolutional_model.predict(mnist_image)
-            else:
-                return
+                prediction = convolutional_model.predict(mnist_image_vector)
 
             try:
                 number = np.where(prediction == 1)[1][0]
@@ -159,10 +160,10 @@ def load_call_back():
     if current_mode is Mode.NN:
         neural_model = neuralnetwork.load('./model.nn')
     elif current_mode is Mode.CNN:
-        convolutional_model = convolutional_model.load('./model.cnn')
+        convolutional_model = convolutionalneuralnetwork.load('./model.cnn')
     elif current_mode is Mode.BOTH:
         neural_model = neuralnetwork.load('./model.nn')
-        convolutional_model = convolutional_model.load('./model.cnn')
+        convolutional_model = convolutionalneuralnetwork.load('./model.cnn')
     elif current_mode is Mode.NONE:
         messagebox.showinfo("Error", "Please select the neural network you want to work with!")
         return
