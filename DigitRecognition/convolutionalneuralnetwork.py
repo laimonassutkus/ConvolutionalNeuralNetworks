@@ -55,28 +55,27 @@ def train_model():
     # build the model
     model = larger_model()
 
-    old_stdout = sys.stdout
-    sys.stdout = mystdout = StringIO()
-    start = time.time()
+    #old_stdout = sys.stdout
+    #sys.stdout = mystdout = StringIO()
+    #start = time.time()
 
     # Fit the model
     model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200)
 
-    end = time.time()
-    sys.stdout = old_stdout
+    #end = time.time()
+    #sys.stdout = old_stdout
 
     # Final evaluation of the model
     scores = model.evaluate(X_test, y_test, verbose=2)
     print("Large CNN Error: %.2f%%" % (100 - scores[1] * 100))
 
-    stats = mystdout.getvalue().splitlines()[20].split(' ')
-    scores = model.evaluate(X_test, y_test, verbose=0)
-
+    # stats = mystdout.getvalue().splitlines()[20].split(' ')
+    stats = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
     cnn_stats = ["Accuracy: {}\n".format(stats[6]),
                  "Value accuracy: {}\n".format(stats[12]),
                  "Loss: {}\n".format(stats[3]),
                  "Value loss: {}\n".format(stats[9]),
-                 "Time to train: {}\n".format(end - start)]
+                 "Time to train: {}\n".format(stats[1])]
 
     print('Baseline Error: %.2f%%' % (100 - scores[1] * 100))
 

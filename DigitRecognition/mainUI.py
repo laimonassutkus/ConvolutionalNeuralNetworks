@@ -31,10 +31,13 @@ def selection_call_back():
     selection = var.get()
     if selection == 1:
         current_mode = Mode.NN
+        button_predict.config(state=NORMAL)
     elif selection == 2:
         current_mode = Mode.CNN
+        button_predict.config(state=NORMAL)
     else:
         current_mode = Mode.BOTH
+        button_predict.config(state=DISABLED)
 
 
 def train_call_back():
@@ -43,19 +46,37 @@ def train_call_back():
     global tensorflow_graph
     global nn_stats
     global cnn_stats
+
     if current_mode == Mode.NN:
-        neural_model, nn_stats = neuralnetwork.train_model()
-        nn_info.delete("1.0", END)
-        nn_info.insert(INSERT, "Simple neural network:\n" + ''.join(str(x) for x in nn_stats))
+        get_neural_model()
     elif current_mode == Mode.CNN:
-        convolutional_model, cnn_stats = convolutionalneuralnetwork.train_model()
-        cnn_info.delete("1.0", END)
-        cnn_info.insert(INSERT, "Convolutional neural network:\n" + ''.join(str(x) for x in cnn_stats))
+        get_convolutional_model()
     elif current_mode == Mode.BOTH:
-        pass
+        cnnt = threading.Thread(target=get_convolutional_model)
+        nnt = threading.Thread(target=get_neural_model)
+
+        cnnt.start()
+        nnt.start()
+
+        cnnt.join()
+        nnt.join()
     else:
         messagebox.showinfo("Error", "Please select the neural network you want to work with!")
     tensorflow_graph = tf.get_default_graph()
+
+
+def get_convolutional_model():
+    global convolutional_model, cnn_stats
+    convolutional_model, cnn_stats = convolutionalneuralnetwork.train_model()
+    cnn_info.delete("1.0", END)
+    cnn_info.insert(INSERT, "Convolutional neural network:\n" + ''.join(str(x) for x in cnn_stats))
+
+
+def get_neural_model():
+    global neural_model, nn_stats
+    neural_model, nn_stats = neuralnetwork.train_model()
+    nn_info.delete("1.0", END)
+    nn_info.insert(INSERT, "Simple neural network:\n" + ''.join(str(x) for x in nn_stats))
 
 
 def show_data_call_back():
@@ -63,10 +84,22 @@ def show_data_call_back():
 
 
 def predict():
+    if current_mode is Mode.NONE:
+        messagebox.showinfo("Error", "Please select the neural network you want to work with!")
+        return
+
     def do_prediction(mnist_image):
         mnist_image_vector = mnist_image.reshape(1, 784)  # TODO 784 is hardcoded
         with tensorflow_graph.as_default():
-            prediction = neural_model.predict(mnist_image_vector)
+            if current_mode is Mode.NN and neural_model is not None:
+                prediction = neural_model.predict(mnist_image_vector)
+            else:
+                return
+            if current_mode is Mode.CNN and convolutional_model is not None:
+                prediction = convolutional_model.predict(mnist_image)
+            else:
+                return
+
             try:
                 number = np.where(prediction == 1)[1][0]
                 print(number)
@@ -76,26 +109,64 @@ def predict():
 
 
 def predict_call_back():
-    if neural_model is not None:
-        t1 = threading.Thread(target=predict)
-        t1.start()
-        t1.join()
-    else:
-        messagebox.showinfo("Error", "Please train the neural network you want to work with or load the model!")
+    nnt = None
+    cnnt = None
+
+    if neural_model is not None and current_mode is Mode.NN:
+        nnt = threading.Thread(target=predict)
+        nnt.start()
+        nnt.join()
+
+    if convolutional_model is not None and current_mode is Mode.CNN:
+        cnnt = threading.Thread(target=predict)
+        cnnt.start()
+        cnnt.join()
+
+    if convolutional_model is None and neural_model is None:
+        messagebox.showinfo("Error", "Please train / select the neural network you want to work with!")
 
 
 def save_call_back():
-    if neural_model is not None:
+    if current_mode is Mode.NONE:
+        messagebox.showinfo("Error", "Please select the neural network you want to work with!")
+        return
+
+    if neural_model is not None and current_mode is Mode.NN:
         neuralnetwork.save('./model.nn', neural_model)
-        messagebox.showinfo("Success", "Saved!")
-    else:
+        messagebox.showinfo("Success", "Saved neural model!")
+    elif current_mode is Mode.NN:
         messagebox.showinfo("Error", "Please train the neural network first!")
+
+    if convolutional_model is not None and current_mode is Mode.CNN:
+        convolutionalneuralnetwork.save('./model.cnn', convolutional_model)
+        messagebox.showinfo("Success", "Saved convolutional neural model!")
+    elif current_mode is Mode.CNN:
+        messagebox.showinfo("Error", "Please train the neural network first!")
+
+    if convolutional_model is not None and neural_model is not None and current_mode is Mode.BOTH:
+        neuralnetwork.save('./model.nn', neural_model)
+        convolutionalneuralnetwork.save('./model.cnn', convolutional_model)
+        messagebox.showinfo("Success", "Saved both neural models!")
+    elif current_mode is Mode.BOTH:
+        messagebox.showinfo("Error", "Please train both neural networks first!")
 
 
 def load_call_back():
     global neural_model
+    global convolutional_model
     global tensorflow_graph
-    neural_model = neuralnetwork.load('./model.nn')
+
+    if current_mode is Mode.NN:
+        neural_model = neuralnetwork.load('./model.nn')
+    elif current_mode is Mode.CNN:
+        convolutional_model = convolutional_model.load('./model.cnn')
+    elif current_mode is Mode.BOTH:
+        neural_model = neuralnetwork.load('./model.nn')
+        convolutional_model = convolutional_model.load('./model.cnn')
+    elif current_mode is Mode.NONE:
+        messagebox.showinfo("Error", "Please select the neural network you want to work with!")
+        return
+
     tensorflow_graph = tf.get_default_graph()
     messagebox.showinfo("Success", "Loaded!")
 
@@ -119,8 +190,8 @@ button = Button(train_frame, text="Train", command=train_call_back)
 button.pack(fill=BOTH, expand=1)
 
 predict_frame = Frame(root, height=32, width=window_width); predict_frame.pack_propagate(0); predict_frame.pack()
-button = Button(predict_frame, text="Predict", command=predict_call_back)
-button.pack(fill=BOTH, expand=1)
+button_predict = Button(predict_frame, text="Predict", command=predict_call_back)
+button_predict.pack(fill=BOTH, expand=1)
 
 load_frame = Frame(root, height=32, width=window_width); load_frame.pack_propagate(0); load_frame.pack()
 button = Button(load_frame, text="Load model", command=load_call_back)
