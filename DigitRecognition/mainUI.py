@@ -82,12 +82,10 @@ def show_data_call_back():
 def predict():
 
     def do_prediction(mnist_image):
-        # TODO fix access to a protected member
-        if current_mode is Mode.NN and simple_neural_network._trained_model is not None:
+        if current_mode is Mode.NN and not simple_neural_network.is_model_none():
             mnist_image_vector = mnist_image.reshape(1, 784)
             prediction = simple_neural_network.predict(mnist_image_vector)
-        # TODO fix access to a protected member
-        elif current_mode is Mode.CNN and convolutional_neural_network._trained_model is not None:
+        elif current_mode is Mode.CNN and not convolutional_neural_network.is_model_none():
             mnist_image_vector = mnist_image.reshape(1, 1, 28, 28)
             prediction = convolutional_neural_network.predict(mnist_image_vector)
         else:
@@ -113,13 +111,15 @@ def predict_call_back():
 
 
 def save_call_back():
-    if current_mode is Mode.NN:
+    if current_mode is Mode.NN and not simple_neural_network.is_model_none():
         simple_neural_network.save('./model.nn')
-    elif current_mode is Mode.CNN:
+    elif current_mode is Mode.CNN and not convolutional_neural_network.is_model_none():
         convolutional_neural_network.save('./model.cnn')
-    elif current_mode is Mode.BOTH:
+    elif current_mode is Mode.BOTH and not convolutional_neural_network.is_model_none() and not simple_neural_network.is_model_none():
         simple_neural_network.save('./model.nn')
         convolutional_neural_network.save('./model.cnn')
+    else:
+        messagebox.showinfo('Error', 'Network not trained.')
 
 
 def load_call_back():

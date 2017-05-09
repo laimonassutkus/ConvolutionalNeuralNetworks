@@ -14,6 +14,9 @@ class NeuralNetwork(ABC):
     _trained_model_info = None
     _tf_graph = tf.get_default_graph()
 
+    def is_model_none(self):
+        return self._trained_model is None
+
     def get_trained_model(self):
         if self._trained_model is None:
             messagebox.showinfo('Info', 'Model is not trained. Training...')
