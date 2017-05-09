@@ -1,7 +1,7 @@
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 import random
-import numpy as np
+from tkinter import messagebox
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.utils import np_utils
@@ -51,15 +51,12 @@ def train_model():
     sys.stdout = old_stdout
 
     stats = mystdout.getvalue().splitlines()[20].split(' ')
-    scores = model.evaluate(X_test, y_test, verbose=0)
 
     cnn_stats = ["Accuracy: {}\n".format(stats[6]),
                  "Value accuracy: {}\n".format(stats[12]),
                  "Loss: {}\n".format(stats[3]),
                  "Value loss: {}\n".format(stats[9]),
                  "Time to train: {}\n".format(end - start)]
-
-    print('Baseline Error: %.2f%%' % (100 - scores[1] * 100))
 
     return model, cnn_stats
 
@@ -88,3 +85,13 @@ def load(path):
 
 def save(path, model):
     model.save(path)
+
+
+def evaluate(model):
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    num_pixels = X_train.shape[1] * X_train.shape[2]
+    X_test = X_test.reshape(X_test.shape[0], num_pixels).astype('float32') / pixel_max_val
+    y_test = np_utils.to_categorical(y_test)
+
+    scores = model.evaluate(X_test, y_test, verbose=0)
+    messagebox.showinfo('Neural Network', 'Baseline Error: %.2f%%' % (100 - scores[1] * 100))

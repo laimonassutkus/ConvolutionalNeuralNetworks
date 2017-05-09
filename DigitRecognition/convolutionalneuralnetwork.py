@@ -1,6 +1,6 @@
 import sys
 from io import StringIO
-
+from tkinter import messagebox
 import time
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -55,27 +55,26 @@ def train_model():
     # build the model
     model = larger_model()
 
-    #old_stdout = sys.stdout
-    #sys.stdout = mystdout = StringIO()
-    #start = time.time()
+    old_stdout = sys.stdout
+    sys.stdout = mystdout = StringIO()
+    start = time.time()
 
     # Fit the model
-    model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200)
+    model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=10, batch_size=200, verbose=2)
 
-    #end = time.time()
-    #sys.stdout = old_stdout
+    end = time.time()
+    sys.stdout = old_stdout
 
     # Final evaluation of the model
-    scores = model.evaluate(X_test, y_test, verbose=2)
+    scores = model.evaluate(X_test, y_test)
     print("Large CNN Error: %.2f%%" % (100 - scores[1] * 100))
 
-    # stats = mystdout.getvalue().splitlines()[20].split(' ')
-    stats = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    stats = mystdout.getvalue().splitlines()[20].split(' ')
     cnn_stats = ["Accuracy: {}\n".format(stats[6]),
                  "Value accuracy: {}\n".format(stats[12]),
                  "Loss: {}\n".format(stats[3]),
                  "Value loss: {}\n".format(stats[9]),
-                 "Time to train: {}\n".format(stats[1])]
+                 "Time to train: {}\n".format(end - start)]
 
     print('Baseline Error: %.2f%%' % (100 - scores[1] * 100))
 
@@ -88,3 +87,11 @@ def load(path):
 
 def save(path, model):
     model.save(path)
+
+
+def evaluate(model):
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    X_test = X_test.reshape(X_test.shape[0], 1, 28, 28).astype('float32') / 255
+    y_test = np_utils.to_categorical(y_test)
+    scores = model.evaluate(X_test, y_test, verbose=0)
+    messagebox.showinfo('Convolutional Neural Network', 'Baseline Error: %.2f%%' % (100 - scores[1] * 100))
