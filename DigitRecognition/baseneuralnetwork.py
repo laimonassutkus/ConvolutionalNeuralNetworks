@@ -6,11 +6,13 @@ from tkinter import messagebox
 from keras.utils import np_utils
 from keras.models import load_model
 from tkinter import messagebox
+import tensorflow as tf
 
 
 class NeuralNetwork(ABC):
     _trained_model = None
     _trained_model_info = None
+    _tf_graph = tf.get_default_graph()
 
     def get_trained_model(self):
         if self._trained_model is None:
@@ -29,8 +31,9 @@ class NeuralNetwork(ABC):
             return self._trained_model_info
 
     def predict(self, image):
-        model = self.get_trained_model()
-        return model.predict(image)
+        with self._tf_graph.as_default():
+            model = self.get_trained_model()
+            return model.predict(image)
 
     @staticmethod
     def show_data():

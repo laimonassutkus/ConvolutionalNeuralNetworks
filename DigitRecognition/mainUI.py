@@ -17,7 +17,6 @@ root = Tk()
 root.geometry('{}x{}'.format(window_width, window_height))
 root.resizable(width=False, height=False)
 
-tensorflow_graph = None
 current_mode = Mode.NONE
 
 simple_neural_network = simpleneuralnetwork.SimpleNeuralNetwork()
@@ -52,8 +51,6 @@ def manage_functional_buttons(is_enabled):
 
 
 def train_call_back():
-    global tensorflow_graph
-
     def get_convolutional_model():
         convolutional_neural_network.train_model()
         stats = convolutional_neural_network.get_trained_model_info()
@@ -77,8 +74,6 @@ def train_call_back():
     elif current_mode is Mode.BOTH:
         messagebox.showinfo('Warning', 'This feature is currently unsupported.')
 
-    tensorflow_graph = tf.get_default_graph()
-
 
 def show_data_call_back():
     baseneuralnetwork.NeuralNetwork.show_data()
@@ -87,17 +82,21 @@ def show_data_call_back():
 def predict():
 
     def do_prediction(mnist_image):
-        mnist_image_vector = mnist_image.reshape(1, 784) \
-            if current_mode is Mode.NN \
-            else mnist_image.reshape(1, 1, 28, 28)
-        with tensorflow_graph.as_default():
-            prediction = simple_neural_network.predict(mnist_image_vector) \
-                if current_mode is Mode.NN \
-                else convolutional_neural_network.predict(mnist_image_vector)
-            try:
-                print(np.where(prediction == 1)[1][0])
-            except IndexError:
-                pass
+        # TODO fix access to a protected member
+        if current_mode is Mode.NN and simple_neural_network._trained_model is not None:
+            mnist_image_vector = mnist_image.reshape(1, 784)
+            prediction = simple_neural_network.predict(mnist_image_vector)
+        # TODO fix access to a protected member
+        elif current_mode is Mode.CNN and convolutional_neural_network._trained_model is not None:
+            mnist_image_vector = mnist_image.reshape(1, 1, 28, 28)
+            prediction = convolutional_neural_network.predict(mnist_image_vector)
+        else:
+            return "Model not trained."
+
+        try:
+            return np.where(prediction == 1)[1][0]
+        except IndexError:
+            return "Can't guess."
 
     paint_number(do_prediction)
 
@@ -109,6 +108,7 @@ def predict_call_back():
 
     nn = threading.Thread(target=predict)
     nn.start()
+    # TODO just make an async task - from multiprocessing import Pool
     nn.join()
 
 
@@ -123,8 +123,6 @@ def save_call_back():
 
 
 def load_call_back():
-    global tensorflow_graph
-
     if current_mode is Mode.NN:
         simple_neural_network.load('./model.nn')
         nn_info.config(background='lightgreen')
@@ -136,8 +134,6 @@ def load_call_back():
         nn_info.config(background='lightgreen')
         convolutional_neural_network.load('./model.cnn')
         cnn_info.config(background='lightgreen')
-
-    tensorflow_graph = tf.get_default_graph()
 
 
 def evaluate_call_back():

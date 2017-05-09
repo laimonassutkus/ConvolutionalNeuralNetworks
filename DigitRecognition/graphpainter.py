@@ -26,17 +26,12 @@ erasing_mode = False
 
 def paint_number(function_ref):
     def on_click(event):
-        global erasing_mode
-        coordinates_x = (event.x - northwest_point[0]) / cell_size
-        coordinates_y = (event.y - northwest_point[1]) / cell_size
-        print('{:.2f} : {:.2f}'.format(coordinates_x, coordinates_y))
-        if erasing_mode is True:
-            board.remove_point(coordinates_x, coordinates_y)
-        else:
-            board.add_point(coordinates_x, coordinates_y)
-        function_ref(np.asarray(board.get_image()))
+        paint_and_guess(event)
 
     def on_clicked_draw(event):
+        paint_and_guess(event)
+
+    def paint_and_guess(event):
         global erasing_mode
         coordinates_x = (event.x - northwest_point[0]) / cell_size
         coordinates_y = (event.y - northwest_point[1]) / cell_size
@@ -45,7 +40,7 @@ def paint_number(function_ref):
             board.remove_point(coordinates_x, coordinates_y)
         else:
             board.add_point(coordinates_x, coordinates_y)
-        function_ref(np.asarray(board.get_image()))
+        print(function_ref(np.asarray(board.get_image())))
 
     def clear_call_back():
         board.clear()
