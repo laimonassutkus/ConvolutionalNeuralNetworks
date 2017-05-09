@@ -1,12 +1,13 @@
 from tkinter import *
 from tkinter import messagebox
 from mode import *
-import neuralnetwork
+import simpleneuralnetwork
 import convolutionalneuralnetwork
 import numpy as np
 from graphpainter import paint_number
 import threading
 import tensorflow as tf
+import baseneuralnetwork
 
 text_box_size = 100
 window_width = 300
@@ -19,8 +20,8 @@ root.resizable(width=False, height=False)
 tensorflow_graph = None
 current_mode = Mode.NONE
 
-neural_model = None
-convolutional_model = None
+simple_neural_network = simpleneuralnetwork.SimpleNeuralNetwork()
+convolutional_neural_network = convolutionalneuralnetwork.ConvolutionalNeuralNetwork()
 
 nn_stats = ["", "", "", "", ""]
 cnn_stats = ["", "", "", "", ""]
@@ -51,23 +52,21 @@ def manage_functional_buttons(is_enabled):
 
 
 def train_call_back():
-    global neural_model
-    global convolutional_model
     global tensorflow_graph
-    global nn_stats
-    global cnn_stats
 
     def get_convolutional_model():
-        global convolutional_model, cnn_stats
-        convolutional_model, cnn_stats = convolutionalneuralnetwork.train_model()
+        convolutional_neural_network.train_model()
+        stats = convolutional_neural_network.get_trained_model_info()
         cnn_info.delete("1.0", END)
-        cnn_info.insert(INSERT, "Convolutional neural network:\n" + ''.join(str(x) for x in cnn_stats))
+        cnn_info.insert(INSERT, "Convolutional neural network:\n" + ''
+                        .join(str(x) for x in stats))
 
     def get_neural_model():
-        global neural_model, nn_stats
-        neural_model, nn_stats = neuralnetwork.train_model()
+        simple_neural_network.train_model()
+        stats = simple_neural_network.get_trained_model_info()
         nn_info.delete("1.0", END)
-        nn_info.insert(INSERT, "Simple neural network:\n" + ''.join(str(x) for x in nn_stats))
+        nn_info.insert(INSERT, "Simple neural network:\n" + ''
+                        .join(str(x) for x in stats))
 
     if current_mode is Mode.NN:
         get_neural_model()
@@ -82,15 +81,19 @@ def train_call_back():
 
 
 def show_data_call_back():
-    neuralnetwork.show_data() # TODO have abstract 'neural network' class and call its base methods
+    baseneuralnetwork.NeuralNetwork.show_data()
 
 
 def predict():
 
     def do_prediction(mnist_image):
-        mnist_image_vector = mnist_image.reshape(1, 784) if current_mode is Mode.NN else mnist_image.reshape(1, 1, 28, 28)
+        mnist_image_vector = mnist_image.reshape(1, 784) \
+            if current_mode is Mode.NN \
+            else mnist_image.reshape(1, 1, 28, 28)
         with tensorflow_graph.as_default():
-            prediction = neural_model.predict(mnist_image_vector) if current_mode is Mode.NN else convolutional_model.predict(mnist_image_vector)
+            prediction = simple_neural_network.predict(mnist_image_vector) \
+                if current_mode is Mode.NN \
+                else convolutional_neural_network.predict(mnist_image_vector)
             try:
                 print(np.where(prediction == 1)[1][0])
             except IndexError:
@@ -103,12 +106,6 @@ def predict_call_back():
     if current_mode is Mode.BOTH:
         messagebox.showinfo('Warning', 'This feature is not yet supported.')
         return
-    elif neural_model is None and current_mode is Mode.NN:
-        messagebox.showinfo('Error', 'Please load or train neural model!')
-        return
-    elif convolutional_model is None and current_mode is Mode.CNN:
-        messagebox.showinfo('Error', 'Please load or train neural model!')
-        return
 
     nn = threading.Thread(target=predict)
     nn.start()
@@ -116,51 +113,41 @@ def predict_call_back():
 
 
 def save_call_back():
-    if current_mode is Mode.NN and neural_model is not None:
-        neuralnetwork.save('./model.nn', neural_model)
-        messagebox.showinfo("Success", "Saved neural model!")
-    elif current_mode is Mode.CNN and convolutional_model is not None:
-        convolutionalneuralnetwork.save('./model.cnn', convolutional_model)
-        messagebox.showinfo("Success", "Saved convolutional neural model!")
-    elif current_mode is Mode.BOTH and convolutional_model is not None and neural_model is not None:
-        neuralnetwork.save('./model.nn', neural_model)
-        convolutionalneuralnetwork.save('./model.cnn', convolutional_model)
-        messagebox.showinfo("Success", "Saved both neural models!")
-    else:
-        messagebox.showinfo('Error', 'You must first load or train neural network in order to save it.')
+    if current_mode is Mode.NN:
+        simple_neural_network.save('./model.nn')
+    elif current_mode is Mode.CNN:
+        convolutional_neural_network.save('./model.cnn')
+    elif current_mode is Mode.BOTH:
+        simple_neural_network.save('./model.nn')
+        convolutional_neural_network.save('./model.cnn')
 
 
 def load_call_back():
-    global neural_model
-    global convolutional_model
     global tensorflow_graph
 
     if current_mode is Mode.NN:
-        neural_model = neuralnetwork.load('./model.nn')
+        simple_neural_network.load('./model.nn')
         nn_info.config(background='lightgreen')
     elif current_mode is Mode.CNN:
-        convolutional_model = convolutionalneuralnetwork.load('./model.cnn')
+        convolutional_neural_network.load('./model.cnn')
         cnn_info.config(background='lightgreen')
     elif current_mode is Mode.BOTH:
-        neural_model = neuralnetwork.load('./model.nn')
-        convolutional_model = convolutionalneuralnetwork.load('./model.cnn')
+        simple_neural_network.load('./model.nn')
         nn_info.config(background='lightgreen')
+        convolutional_neural_network.load('./model.cnn')
         cnn_info.config(background='lightgreen')
 
     tensorflow_graph = tf.get_default_graph()
-    messagebox.showinfo("Success", "Loaded!")
 
 
 def evaluate_call_back():
-    if current_mode is Mode.NN and neural_model is not None:
-        neuralnetwork.evaluate(neural_model)
-    elif current_mode is Mode.CNN and convolutional_model is not None:
-        convolutionalneuralnetwork.evaluate(convolutional_model)
-    elif current_mode is Mode.BOTH and convolutional_model is not None and neural_model is not None:
-        neuralnetwork.evaluate(neural_model)
-        convolutionalneuralnetwork.evaluate(convolutional_model)
-    else:
-        messagebox.showinfo('Error', 'You must first load or train neural network in order to evaluate it.')
+    if current_mode is Mode.NN:
+        simple_neural_network.evaluate()
+    elif current_mode is Mode.CNN:
+        convolutional_neural_network.evaluate()
+    elif current_mode is Mode.BOTH:
+        simple_neural_network.evaluate()
+        convolutional_neural_network.evaluate()
 
 var = IntVar()
 
