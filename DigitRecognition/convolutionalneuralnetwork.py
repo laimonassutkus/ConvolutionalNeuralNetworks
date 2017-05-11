@@ -11,13 +11,16 @@ from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.utils import np_utils
 from keras import backend as kb
-from keras.models import load_model
+from statscontainer import Stats
 from baseneuralnetwork import NeuralNetwork
 
 kb.set_image_dim_ordering('th')
 
 
 class ConvolutionalNeuralNetwork(NeuralNetwork):
+
+    def reshape(self, image):
+        return image.reshape(1, 1, 28, 28)
 
     def evaluate(self):
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -77,11 +80,6 @@ class ConvolutionalNeuralNetwork(NeuralNetwork):
         sys.stdout = old_stdout
 
         stats = mystdout.getvalue().splitlines()[20].split(' ')
-        cnn_stats = ["Accuracy: {}\n".format(stats[6]),
-                     "Value accuracy: {}\n".format(stats[12]),
-                     "Loss: {}\n".format(stats[3]),
-                     "Value loss: {}\n".format(stats[9]),
-                     "Time to train: {}\n".format(end - start)]
-
+        cnn_stats = Stats(stats[6], stats[12], stats[3], stats[9], end - start)
         self._trained_model = model
         self._trained_model_info = cnn_stats

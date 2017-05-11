@@ -6,8 +6,8 @@ import convolutionalneuralnetwork
 import numpy as np
 from graphpainter import paint_number
 import threading
-import tensorflow as tf
 import baseneuralnetwork
+from statscontainer import Stats
 
 text_box_size = 100
 window_width = 300
@@ -21,9 +21,6 @@ current_mode = Mode.NONE
 
 simple_neural_network = simpleneuralnetwork.SimpleNeuralNetwork()
 convolutional_neural_network = convolutionalneuralnetwork.ConvolutionalNeuralNetwork()
-
-nn_stats = ["", "", "", "", ""]
-cnn_stats = ["", "", "", "", ""]
 
 
 def selection_call_back():
@@ -55,15 +52,13 @@ def train_call_back():
         convolutional_neural_network.train_model()
         stats = convolutional_neural_network.get_trained_model_info()
         cnn_info.delete("1.0", END)
-        cnn_info.insert(INSERT, "Convolutional neural network:\n" + ''
-                        .join(str(x) for x in stats))
+        cnn_info.insert(INSERT, "Convolutional neural network:\n" + str(stats))
 
     def get_neural_model():
         simple_neural_network.train_model()
         stats = simple_neural_network.get_trained_model_info()
         nn_info.delete("1.0", END)
-        nn_info.insert(INSERT, "Simple neural network:\n" + ''
-                        .join(str(x) for x in stats))
+        nn_info.insert(INSERT, "Simple neural network:\n" + str(stats))
 
     if current_mode is Mode.NN:
         get_neural_model()
@@ -83,11 +78,9 @@ def predict():
 
     def do_prediction(mnist_image):
         if current_mode is Mode.NN and not simple_neural_network.is_model_none():
-            mnist_image_vector = mnist_image.reshape(1, 784)
-            prediction = simple_neural_network.predict(mnist_image_vector)
+            prediction = simple_neural_network.predict(mnist_image)
         elif current_mode is Mode.CNN and not convolutional_neural_network.is_model_none():
-            mnist_image_vector = mnist_image.reshape(1, 1, 28, 28)
-            prediction = convolutional_neural_network.predict(mnist_image_vector)
+            prediction = convolutional_neural_network.predict(mnist_image)
         else:
             return "Model not trained."
 
@@ -182,25 +175,18 @@ save_button.pack(fill=BOTH, expand=1)
 
 manage_functional_buttons(False)
 
+blank = str(Stats("", "", "", "", ""))
 nn_frame = Frame(root, height=text_box_size, width=window_width); nn_frame.pack_propagate(0); nn_frame.pack(padx=5, pady=5)
 nn_info = Text(nn_frame)
 nn_info.insert(INSERT, "Simple neural network:\n")
-nn_info.insert(INSERT, "Accuracy: {}\n".format(nn_stats[0]))
-nn_info.insert(INSERT, "Value accuracy: {}\n".format(nn_stats[1]))
-nn_info.insert(INSERT, "Loss: {}\n".format(nn_stats[2]))
-nn_info.insert(INSERT, "Value loss: {}\n".format(nn_stats[3]))
-nn_info.insert(INSERT, "Time to train: {}".format(nn_stats[4]))
+nn_info.insert(INSERT, blank)
 nn_info.config(background='#%02x%02x%02x' % (240, 240, 240))
 nn_info.pack(fill=BOTH, expand=1)
 
 cnn_frame = Frame(root, height=text_box_size, width=window_width); cnn_frame.pack_propagate(0); cnn_frame.pack(padx=5, pady=5)
 cnn_info = Text(cnn_frame)
 cnn_info.insert(INSERT, "Convolutional neural network:\n")
-cnn_info.insert(INSERT, "Accuracy: {}\n".format(cnn_stats[0]))
-cnn_info.insert(INSERT, "Value accuracy: {}\n".format(cnn_stats[1]))
-cnn_info.insert(INSERT, "Loss: {}\n".format(cnn_stats[2]))
-cnn_info.insert(INSERT, "Value loss: {}\n".format(cnn_stats[3]))
-cnn_info.insert(INSERT, "Time to train: {}".format(cnn_stats[4]))
+cnn_info.insert(INSERT, blank)
 cnn_info.config(background='#%02x%02x%02x' % (240, 240, 240))
 cnn_info.pack()
 

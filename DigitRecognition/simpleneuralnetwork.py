@@ -7,9 +7,13 @@ import sys
 import time
 from baseneuralnetwork import NeuralNetwork
 from tkinter import messagebox
+from statscontainer import Stats
 
 
 class SimpleNeuralNetwork(NeuralNetwork):
+
+    def reshape(self, image):
+        return image.reshape(1, 784)
 
     def evaluate(self):
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -58,12 +62,6 @@ class SimpleNeuralNetwork(NeuralNetwork):
         sys.stdout = old_stdout
 
         stats = mystdout.getvalue().splitlines()[20].split(' ')
-
-        nn_stats = ["Accuracy: {}\n".format(stats[6]),
-                     "Value accuracy: {}\n".format(stats[12]),
-                     "Loss: {}\n".format(stats[3]),
-                     "Value loss: {}\n".format(stats[9]),
-                     "Time to train: {}\n".format(end - start)]
-
+        nn_stats = Stats(stats[6], stats[12], stats[3], stats[9], end - start)
         self._trained_model = model
         self._trained_model_info = nn_stats

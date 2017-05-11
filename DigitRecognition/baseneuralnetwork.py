@@ -36,7 +36,7 @@ class NeuralNetwork(ABC):
     def predict(self, image):
         with self._tf_graph.as_default():
             model = self.get_trained_model()
-            return model.predict(image)
+            return model.predict(self.reshape(image))
 
     @staticmethod
     def show_data():
@@ -64,6 +64,10 @@ class NeuralNetwork(ABC):
         model = self.get_trained_model()
         model.save(path)
         messagebox.showinfo("Success", "Saved neural model!")
+
+    @abstractmethod
+    def reshape(self, image):
+        pass
 
     @abstractmethod
     def evaluate(self):
