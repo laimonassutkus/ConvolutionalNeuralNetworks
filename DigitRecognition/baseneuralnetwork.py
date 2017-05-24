@@ -8,12 +8,15 @@ import tensorflow as tf
 from pathlib import Path
 import ntpath
 from statscontainer import GuessStats
+import cloudpickle
 
 
 class NeuralNetwork(ABC):
     _trained_model = None
     _trained_model_info = None
     _tf_graph = tf.get_default_graph()
+
+    guessStats = GuessStats()
 
     def is_model_none(self):
         return self._trained_model is None
@@ -57,20 +60,30 @@ class NeuralNetwork(ABC):
         plt.suptitle('Training data examples')
         plt.show()
 
-    def load(self, path):
-        file_name = ntpath.basename(path)
+    def load(self, path, model_name_extension):
+        model_path = path + 'model' + model_name_extension
+        modelguess_path = path + 'modelguess' + model_name_extension
+        modelinfo_path = path + 'modelinfo' + model_name_extension
 
-        if Path(path).is_file():
-            self._trained_model = load_model(path)
-            messagebox.showinfo("Success", "Successfully loaded model - {}!".format(file_name))
+        if Path(model_path).is_file() and Path(modelguess_path).is_file() and Path(modelinfo_path).is_file():
+            self._trained_model = load_model(model_path)
+            self._trained_model_info = cloudpickle.load(open(modelinfo_path, 'rb'))
+            self.guessStats = cloudpickle.load(open(modelguess_path, 'rb'))
+
+            messagebox.showinfo("Success", "Successfully loaded models - {}, {}, {}".format(ntpath.basename(model_path),
+                                                                                            ntpath.basename(modelguess_path),
+                                                                                            ntpath.basename(modelinfo_path)))
             return 0
         else:
-            messagebox.showinfo("Failure", "Failed to load model. File \'{}\' does not exist.".format(file_name))
+            messagebox.showinfo("Failure", "Failed to load all models.")
             return 1
 
-    def save(self, path):
+    # TODO check if saved models are not None
+    def save(self, path, model_name_extension):
         model = self.get_trained_model()
-        model.save(path)
+        model.save(path + 'model' + model_name_extension)
+        cloudpickle.dump(self.guessStats, open(path + 'modelguess' + model_name_extension, 'wb'))
+        cloudpickle.dump(self._trained_model_info, open(path + 'modelinfo' + model_name_extension, 'wb'))
         messagebox.showinfo("Success", "Saved neural model!")
 
     @abstractmethod

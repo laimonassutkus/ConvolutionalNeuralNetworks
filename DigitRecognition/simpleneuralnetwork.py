@@ -12,8 +12,6 @@ from statscontainer import Stats, GuessStats
 
 class SimpleNeuralNetwork(NeuralNetwork):
 
-    guessStats = GuessStats()
-
     def reshape(self, image):
         return image.reshape(1, 784)
 

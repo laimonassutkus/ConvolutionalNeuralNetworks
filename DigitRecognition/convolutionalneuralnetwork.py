@@ -19,8 +19,6 @@ kb.set_image_dim_ordering('th')
 
 class ConvolutionalNeuralNetwork(NeuralNetwork):
 
-    guessStats = GuessStats()
-
     def reshape(self, image):
         return image.reshape(1, 1, 28, 28)
 

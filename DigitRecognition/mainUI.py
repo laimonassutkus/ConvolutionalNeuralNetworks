@@ -8,7 +8,8 @@ import numpy as np
 from graphpainter import paint_number
 import threading
 import baseneuralnetwork
-from statscontainer import Stats, GuessStats
+from statscontainer import Stats
+import dill
 
 text_box_size = 100
 window_width = 300
@@ -67,8 +68,8 @@ def train_call_back():
     def get_neural_model():
         simple_neural_network.train_model()
         stats = simple_neural_network.get_trained_model_info()
-        nn_info.delete("1.0", END)
-        nn_info.insert(INSERT, "Simple neural network:\n" + str(stats))
+        snn_info.delete("1.0", END)
+        snn_info.insert(INSERT, "Simple neural network:\n" + str(stats))
 
     def get_large_model():
         large_neural_network.train_model()
@@ -78,7 +79,7 @@ def train_call_back():
 
     if current_mode is Mode.SNN:
         get_neural_model()
-        nn_info.config(background='lightgreen')
+        snn_info.config(background='lightgreen')
         enable_disable_buttons(True, True)
     elif current_mode is Mode.LNN:
         get_large_model()
@@ -128,8 +129,11 @@ def predict():
                 num_lnn = np.where(prediction2 == 1)[1][0]
                 num_cnn = np.where(prediction3 == 1)[1][0]
 
+                # get the most popular answer
                 guess_list = [num_cnn, num_lnn, num_snn]
                 most_frequent = max(set(guess_list), key=guess_list.count)
+
+                # if all networks showed different answers use CNN's answer because it is the most accurate one
                 if guess_list.count(most_frequent) is 1:
                     most_frequent = num_cnn
 
@@ -141,6 +145,7 @@ def predict():
             except IndexError:
                 return "Can't guess."
 
+    # TODO cleanup
     if current_mode is Mode.SNN:
         paint_number(do_prediction, simple_neural_network.guessStats)
     elif current_mode is Mode.LNN:
@@ -160,45 +165,73 @@ def predict_call_back():
 
 def save_call_back():
     if current_mode is Mode.SNN:
-        simple_neural_network.save('./model.snn')
+        simple_neural_network.save('./', '.snn')
     elif current_mode is Mode.LNN:
-        large_neural_network.save('./model.lnn')
+        large_neural_network.save('./', '.lnn')
     elif current_mode is Mode.CNN:
-        convolutional_neural_network.save('./model.cnn')
+        convolutional_neural_network.save('./', 'cnn')
     else:
-        simple_neural_network.save('./model.snn')
-        large_neural_network.save('./model.lnn')
-        convolutional_neural_network.save('./model.cnn')
+        simple_neural_network.save('./', '.snn')
+        large_neural_network.save('./', '.lnn')
+        convolutional_neural_network.save('./', 'cnn')
 
 
 def load_call_back():
     if current_mode is Mode.SNN:
-        val = simple_neural_network.load('./model.snn')
+        val = simple_neural_network.load('./', '.snn')
         if val is 0:
-            nn_info.config(background='lightgreen')
+            snn_info.config(background='lightgreen')
+
+            # TODO code duplicate
+            stats = simple_neural_network.get_trained_model_info()
+            snn_info.delete("1.0", END)
+            snn_info.insert(INSERT, "Simple neural network:\n" + str(stats))
+
             enable_disable_buttons(True, True)
     elif current_mode is Mode.LNN:
-        val = large_neural_network.load('./model.lnn')
+        val = large_neural_network.load('./', '.lnn')
         if val is 0:
             lnn_info.config(background='lightgreen')
+
+            # TODO code duplicate
+            stats = large_neural_network.get_trained_model_info()
+            lnn_info.delete("1.0", END)
+            lnn_info.insert(INSERT, "Large neural network:\n" + str(stats))
+
             enable_disable_buttons(True, True)
     elif current_mode is Mode.CNN:
-        val = convolutional_neural_network.load('./model.cnn')
+        val = convolutional_neural_network.load('./', 'cnn')
         if val is 0:
             cnn_info.config(background='lightgreen')
+
+            # TODO code duplicate
+            stats = convolutional_neural_network.get_trained_model_info()
+            cnn_info.delete("1.0", END)
+            cnn_info.insert(INSERT, "Convolutional neural network:\n" + str(stats))
+
             enable_disable_buttons(True, True)
     elif current_mode is Mode.ALL:
-        val1 = simple_neural_network.load('./model.snn')
+        val1 = simple_neural_network.load('./', '.snn')
         if val1 is 0:
-            nn_info.config(background='lightgreen')
-        val2 = large_neural_network.load('./model.lnn')
+            snn_info.config(background='lightgreen')
+        val2 = large_neural_network.load('./', '.lnn')
         if val2 is 0:
             lnn_info.config(background='lightgreen')
-        val3 = convolutional_neural_network.load('./model.cnn')
+        val3 = convolutional_neural_network.load('./', 'cnn')
         if val3 is 0:
             cnn_info.config(background='lightgreen')
 
         if val3 is 0 and val2 is 0 and val1 is 0:
+            # TODO code duplicates
+            stats = simple_neural_network.get_trained_model_info()
+            snn_info.delete("1.0", END)
+            snn_info.insert(INSERT, "Simple neural network:\n" + str(stats))
+            stats = large_neural_network.get_trained_model_info()
+            lnn_info.delete("1.0", END)
+            lnn_info.insert(INSERT, "Large neural network:\n" + str(stats))
+            stats = convolutional_neural_network.get_trained_model_info()
+            cnn_info.delete("1.0", END)
+            cnn_info.insert(INSERT, "Convolutional neural network:\n" + str(stats))
             enable_disable_buttons(True, True)
 
 
@@ -271,11 +304,11 @@ blank = str(Stats(-1, -1, -1, -1, -1))
 nn_frame = Frame(root, height=text_box_size, width=window_width)
 nn_frame.pack_propagate(0)
 nn_frame.pack(padx=5, pady=5)
-nn_info = Text(nn_frame)
-nn_info.insert(INSERT, "Simple neural network:\n")
-nn_info.insert(INSERT, blank)
-nn_info.config(background='#%02x%02x%02x' % (240, 240, 240))
-nn_info.pack(fill=BOTH, expand=1)
+snn_info = Text(nn_frame)
+snn_info.insert(INSERT, "Simple neural network:\n")
+snn_info.insert(INSERT, blank)
+snn_info.config(background='#%02x%02x%02x' % (240, 240, 240))
+snn_info.pack(fill=BOTH, expand=1)
 
 lnn_frame = Frame(root, height=text_box_size, width=window_width)
 lnn_frame.pack_propagate(0)
