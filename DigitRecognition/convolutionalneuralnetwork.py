@@ -11,13 +11,15 @@ from keras.layers.convolutional import Conv2D
 from keras.layers.convolutional import MaxPooling2D
 from keras.utils import np_utils
 from keras import backend as kb
-from statscontainer import Stats
+from statscontainer import Stats, GuessStats
 from baseneuralnetwork import NeuralNetwork
 
 kb.set_image_dim_ordering('th')
 
 
 class ConvolutionalNeuralNetwork(NeuralNetwork):
+
+    guessStats = GuessStats()
 
     def reshape(self, image):
         return image.reshape(1, 1, 28, 28)

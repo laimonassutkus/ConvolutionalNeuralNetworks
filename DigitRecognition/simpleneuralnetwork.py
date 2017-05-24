@@ -7,10 +7,12 @@ import sys
 import time
 from baseneuralnetwork import NeuralNetwork
 from tkinter import messagebox
-from statscontainer import Stats
+from statscontainer import Stats, GuessStats
 
 
 class SimpleNeuralNetwork(NeuralNetwork):
+
+    guessStats = GuessStats()
 
     def reshape(self, image):
         return image.reshape(1, 784)

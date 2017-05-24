@@ -24,7 +24,7 @@ northwest_point = [border, border]
 erasing_mode = False
 
 
-def paint_number(function_ref):
+def paint_number(function_ref, countStats):
     def on_click(event):
         paint_and_guess(event)
 
@@ -53,6 +53,14 @@ def paint_number(function_ref):
         global erasing_mode
         erasing_mode = False
 
+    def correct_call_back():
+        countStats.increment_correct()
+        print('Total correct predictions: {}'.format(countStats.correct_count))
+
+    def false_call_back():
+        countStats.increment_false()
+        print('Total false predictions: {}'.format(countStats.false_count))
+
     root = tkinter.Tk()
     root.geometry('{}x{}'.format(window_size + border * 2, window_size + border * 2 + buttons_border))
     root.resizable(width=False, height=False)
@@ -66,18 +74,30 @@ def paint_number(function_ref):
     button_canvas.bind('<B1-Motion> ', on_clicked_draw)
     button_canvas.bind('<Button-1>', on_click)
     button_canvas.pack()
-    button_canvas.config(width=window_size + border * 2, height=buttons_border)
+    button_canvas.config(width=window_size + border * 2, height=buttons_border, background='#F0F0F0')
 
     button_clear = tkinter.Button(button_canvas, text="Clear", command=clear_call_back)
-    button_clear.grid(row=0, column=0, columnspan=1, sticky='w')
+    button_clear.grid(row=0, column=1, columnspan=1, sticky='w')
 
     button_paint = tkinter.Button(button_canvas, text="Draw", command=draw_call_back)
-    button_paint.grid(row=0, column=1, columnspan=1, sticky='w')
+    button_paint.grid(row=0, column=2, columnspan=1, sticky='w')
 
     button_erase = tkinter.Button(button_canvas, text="Erase", command=erase_call_back)
-    button_erase.grid(row=0, column=2, columnspan=1, sticky='w')
+    button_erase.grid(row=0, column=3, columnspan=1, sticky='w')
+
+    button_correct = tkinter.Button(button_canvas, text="That was correct! :)", command=correct_call_back)
+    button_correct.grid(row=0, column=4, columnspan=1, sticky='w', padx=15)
+    button_correct.configure(background='#8FFF8F')
+
+    button_false = tkinter.Button(button_canvas, text="That wasn't correct! :(", command=false_call_back)
+    button_false.grid(row=0, column=0, columnspan=1, sticky='w', padx=15)
+    button_false.configure(background='#FF8F8F')
 
     board = Board(grid_size, cell_size, canvas)
     board.draw_grid()
+
+    if countStats is None:
+        button_correct.config(state='disabled')
+        button_false.config(state='disabled')
 
     root.mainloop()

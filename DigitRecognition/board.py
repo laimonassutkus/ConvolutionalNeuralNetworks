@@ -15,18 +15,14 @@ class Board:
         pass
 
     def add_point(self, x, y):
-        if int(x) < self.grid_size and int(y) < self.grid_size and int(x) >= 0 and int(y) >= 0:
-            start_x = int(x) * self.cell_size + self.border
-            start_y = int(y) * self.cell_size + self.border
-            self.canvas.create_rectangle(
-                start_x,
-                start_y,
-                int(x) * self.cell_size + self.cell_size + self.border,
-                int(y) * self.cell_size + self.cell_size + self.border, fill='black', outline='black')
-            # swap rows to x and columns to y
-            self.board[int(y)][int(x)] = 255
+        self.manage_point(x, y, 255)
 
     def remove_point(self, x, y):
+        self.manage_point(x, y, 0)
+
+    def manage_point(self, x, y, value):
+        fill_color = 'black' if value > 0 else 'white'
+
         if int(x) < self.grid_size and int(y) < self.grid_size and int(x) >= 0 and int(y) >= 0:
             start_x = int(x) * self.cell_size + self.border
             start_y = int(y) * self.cell_size + self.border
@@ -34,9 +30,9 @@ class Board:
                 start_x,
                 start_y,
                 int(x) * self.cell_size + self.cell_size + self.border,
-                int(y) * self.cell_size + self.cell_size + self.border, fill='white', outline='black')
+                int(y) * self.cell_size + self.cell_size + self.border, fill=fill_color, outline='black')
             # swap rows to x and columns to y
-            self.board[int(y)][int(x)] = 0
+            self.board[int(y)][int(x)] = value
 
     def draw_grid(self):
         for dist in range(0, self.grid_size + 1):

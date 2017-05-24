@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 import random
-from tkinter import messagebox
-from keras.utils import np_utils
 from keras.models import load_model
 from tkinter import messagebox
 import tensorflow as tf
+from pathlib import Path
+import ntpath
+from statscontainer import GuessStats
 
 
 class NeuralNetwork(ABC):
@@ -57,8 +58,15 @@ class NeuralNetwork(ABC):
         plt.show()
 
     def load(self, path):
-        self._trained_model = load_model(path)
-        messagebox.showinfo("Success", "Successfully loaded model!")
+        file_name = ntpath.basename(path)
+
+        if Path(path).is_file():
+            self._trained_model = load_model(path)
+            messagebox.showinfo("Success", "Successfully loaded model - {}!".format(file_name))
+            return 0
+        else:
+            messagebox.showinfo("Failure", "Failed to load model. File \'{}\' does not exist.".format(file_name))
+            return 1
 
     def save(self, path):
         model = self.get_trained_model()
